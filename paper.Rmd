@@ -1,0 +1,557 @@
+---
+title: "SMPD4"
+author: "Dean Marchiori"
+date: "8/7/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+```
+
+```{r}
+pheno <- read_excel('data/mmc2.xlsx', n_max = 66, col_names = FALSE)
+
+x <- pheno |> 
+  unite("feature", 1:2) |> 
+  mutate(feature = str_remove(feature, "_NA|NA_|NA")) |> 
+  t() |> 
+  as_tibble() |> 
+  row_to_names(row_number = 1) |> 
+  clean_names() |> 
+  select(-na, -na_2) |> 
+  mutate(across(everything(), ~str_replace(., "n\\.a\\.", NA_character_))) |> 
+ # select_if(\(x) sum(is.na(x))/length(x) < 0.5)|> 
+  mutate(family = str_extract(family_contributing_institute, "(?<=Family )\\d+"),
+         individual = str_extract(family_contributing_institute, "(?<=Individual |[T|t]win |Sibling )\\d+"), .before = 1) |> 
+  replace_na(list(individual = 1)) |> 
+  select(-family_contributing_institute) |> 
+  unite("id", family, individual, remove = FALSE) |> 
+  mutate(gender = tolower(gender),
+         gender = fct_recode(gender, female = "female fetus")) |> 
+  separate_rows(pregnancy, sep = ", |and ") |> 
+  pivot_wider(names_from = pregnancy, values_from = pregnancy, values_fn = \(x) 1L, values_fill = 0) |> 
+  mutate(consanguineous = ifelse(str_detect(family_hx, "[N|n]on-consanguineous|not related"), FALSE, TRUE), .before = 5) |> 
+  select(-family_hx) |> 
+  mutate(termination = str_detect(birth_gestation, "TOP"),
+         birth_gestation = ifelse(str_detect(birth_gestation, "term"), 40, parse_number(birth_gestation))) |> 
+  mutate(route_vaginal_vs_c_sect = ifelse(str_detect(route_vaginal_vs_c_sect, "vaginal"), "SVD", "CS"), .before = 8) |> 
+  mutate(variant_type = tolower(str_extract(smpd4_variant, "[H|h]omozygo[te|us]+|[C|c]ompound heterozygote")),
+         variant_type = replace_na(variant_type, "compound heterozygote"), 
+         locus = str_extract_all(smpd4_variant, "(?<=c.)\\d+"),
+         locus_1 = map(locus, ~pluck(.x, 1, .default = NA_character_)),
+         locus_2 = map(locus, ~pluck(.x, 2, .default = NA_character_))) |> 
+  select(-smpd4_variant) |> 
+  mutate(birth_weight = ifelse(parse_number(birth_weight) < 1000, 
+                               1000*parse_number(birth_weight), 
+                               parse_number(birth_weight))) |> 
+  mutate(birth_ofc = ifelse(parse_number(birth_ofc) > 100, 
+                            parse_number(birth_ofc) / 10, 
+                            parse_number(birth_ofc))) |> 
+  mutate(birth_length = parse_number(birth_length)) |> 
+  select(-medical_hospitalizations, -medications) |> 
+  mutate(age_at_demise = case_when(
+    str_detect(age_at_demise, "deceased") ~ 180,
+    termination == TRUE ~ 0,
+    str_detect(age_at_demise, "month") ~ parse_number(age_at_demise) * 30,
+    str_detect(age_at_demise, "day|pp") ~ parse_number(age_at_demise),
+    str_detect(age_at_demise, "y|yr") ~ parse_number(age_at_demise)*365
+  ),
+  deceased = case_when(
+    termination == TRUE ~ TRUE,
+    str_detect(age_at_demise, "alive") ~ FALSE,
+    is.na(age_at_demise) ~ FALSE,
+    TRUE ~ TRUE),
+  age_at_last_follow_up = case_when(
+    str_detect(age_at_last_follow_up, "month") ~ parse_number(age_at_last_follow_up) * 30,
+    str_detect(age_at_last_follow_up, "day") ~ parse_number(age_at_last_follow_up),
+    str_detect(age_at_last_follow_up, "week") ~ parse_number(age_at_last_follow_up)*7,
+    str_detect(age_at_last_follow_up, "y|yr") ~ parse_number(age_at_last_follow_up)*365
+  ),
+  survival_time = pmax(age_at_last_follow_up, age_at_demise, na.rm = TRUE)) |> 
+  mutate(seizure = !str_detect(seizures_age_started, "[N|n]one|no "), .before = 19) |> 
+  mutate(other_neurologic_dysfunction = replace_na(other_neurologic_dysfunction, "no")) |> 
+  separate_rows(other_neurologic_dysfunction, sep = ", ") |> 
+  pivot_wider(names_from = other_neurologic_dysfunction, 
+              values_from = other_neurologic_dysfunction,
+              values_fn = \(x) 1L, 
+              values_fill = 0, 
+              names_repair = "unique") |> 
+  separate_rows(neonatal_issues, sep = ", |\\. ") |> 
+  pivot_wider(names_from = neonatal_issues, 
+              values_from = neonatal_issues, 
+              values_fn = \(x) 1L, 
+              values_fill = 0, 
+              names_repair = "unique") |> 
+  separate_rows(facial_dysmorphisms, sep = ", |\\. ") |> 
+  pivot_wider(names_from = facial_dysmorphisms, 
+              values_from = facial_dysmorphisms, 
+              values_fn = \(x) 1L, 
+              values_fill = 0, 
+              names_repair = "unique") |> 
+  mutate(other_organ_defects = str_squish(other_organ_defects)) |> 
+  separate_rows(other_organ_defects, sep = ", |\\. ") |> 
+  pivot_wider(names_from = other_organ_defects, 
+              values_from = other_organ_defects, 
+              values_fn = \(x) 1L, 
+              values_fill = 0, 
+              names_repair = "unique") |> 
+  mutate(other_medical_issues = str_squish(other_medical_issues)) |> 
+  separate_rows(other_medical_issues, sep = ", |\\. ") |> 
+  pivot_wider(names_from = other_medical_issues, 
+              values_from = other_medical_issues, 
+              values_fn = \(x) 1L, 
+              values_fill = 0, 
+              names_repair = "unique") |> 
+  mutate(MRI_brain = str_squish(na_4)) |> 
+  separate_rows(MRI_brain, sep = ", |\\. ") |> 
+  pivot_wider(names_from = MRI_brain, 
+              values_from = MRI_brain, 
+              values_fn = \(x) 1L, 
+              values_fill = 0, 
+              names_repair = "unique") |> 
+  mutate(other = str_squish(other)) |> 
+  separate_rows(other, sep = ", |\\. ") |> 
+  pivot_wider(names_from = other, 
+              values_from = other, 
+              values_fn = \(x) 1L, 
+              values_fill = 0, 
+              names_repair = "unique") |> 
+  janitor::clean_names() |> 
+  select(-current_weight, -current_ofc, -current_length, -brain_imaging_mri_age_age, -normal, -not_available,
+         -twin_1_of_dichorionic_diamniotic_pregnancy_after_clomid_induction, -twin_2_of_dichorionic_diamniotic_pregnancy_after_clomid_induction,
+         abnormal_prenatal_us) |> 
+  mutate(widely_spaced_nipples = widely_spaced_nipples_and_rocker_bottom_feet,
+         rocker_bottom_feet = widely_spaced_nipples_and_rocker_bottom_feet) |> 
+  select(-starts_with("na")) |> 
+  select(-starts_with("apgar")) |> 
+  mutate(microcephaly_ind = pmax(microcephaly_60, 
+                                 microcephaly_103, 
+                                 microcephaly_187, 
+                                 microcephaly_with_simplified_gyral_pattern, 
+                                 microcephaly_with_sgp,
+                                 head_ct_2_mo_microcephaly,
+                                 microcephaly_with_moderate_sgp_and_relative_small_cerebellum_and_at_lesser_degree_brainstem,
+                                 mri_microcephaly_with_sgp, 
+                                 microcephaly_with_sgp_and_small_cerebrum, 
+                                 na.rm = TRUE)) |> 
+  mutate(sgp_ind = pmax(microcephaly_with_simplified_gyral_pattern,
+                        microcephaly_with_sgp,
+                        microcephaly_with_moderate_sgp_and_relative_small_cerebellum_and_at_lesser_degree_brainstem,
+                        mri_microcephaly_with_sgp,
+                        microcephaly_with_sgp_and_small_cerebrum,
+                        abnormal_gyral_pattern_dysgyria,
+                        na.rm = TRUE)) |> 
+  mutate(iugr_ind = pmax(iugr,
+                         iugr_2,
+                         mild_iugr,
+                         na.rm = TRUE)) |> 
+  mutate(talipes_ind = pmax(g7p5_1l2_at_37_3_previous_4_cs_antenatal_us_showed_bilateral_talipes, 
+                            bilateral_clubfoot,
+                            contractures_of_hands_and_club_feet_2,
+                            bilateral_talipes,
+                            contractures_of_hands_and_club_feet,
+                            bilateral_lower_limbs_talipes_and_joint_contractures,
+                            flexion_contractures_of_the_joints_and_club_feet,
+                            talipus_bilaterally,
+                            talipus_bilaterally_2,
+                            bilateral_clubfeed,
+                            na.rm = TRUE)) |> 
+  mutate(rocker_bottom_feet_ind = pmax(rocker_bottom_feet_76,
+                                       rocker_bottom_feet_118,
+                                       rocker_bottom_feet,
+                                       rocker_bottom_feet_177,
+                                       bilaterally_adducted_thumbs_and_rocker_bottom_feet,
+                                       congenital_vertical_talus,
+                                       vertical_talus,
+                                       widely_spaced_nipples_and_rocker_bottom_feet,
+                                       rocker_bottom_feet_288,
+                                       na.rm = TRUE)) |> 
+  mutate(contractures_feet_ind = pmax( contractures_of_fingers_and_feet,
+                                       contractures_of_hands_and_feet,
+                                       contractures_of_hands_and_feet_and_hypercapnia,
+                                       contractures_of_hands_and_club_feet_2,
+                                       bilateral_lower_limbs_talipes_and_joint_contractures,
+                                       flexion_contractures_of_the_joints_and_club_feet,
+                                       na.rm = TRUE)) |> 
+  mutate(contractures_hands_deform_ind = pmax(clenched_hands_71, 
+                                              long_2nd_finger,
+                                              suspected_syndactyly,
+                                              contractures_of_fingers_and_feet,
+                                              contractures_of_hands,
+                                              contractures_of_hands_and_feet,
+                                              contractures_of_hands_and_feet_and_hypercapnia,
+                                              hypertonic_fingers_and_toes,
+                                              contractures_of_hands_and_club_feet,
+                                              found_with_mild_dysmorphic_features_and_contractures_after_birth,
+                                              clenched_hands_146,
+                                              contractures_of_hands_and_club_feet_2,
+                                              clenched_hands_and_contractures,
+                                              contractures_and_bilateral_camptodactyly_of_fingers_and_toes,
+                                              adducted_thumbs,
+                                              bilaterally_adducted_thumbs_and_rocker_bottom_feet,
+                                              clenched_fist,
+                                              overlapping_fingers,
+                                              contractures_and_camptodactyly_of_the_left_hand,
+                                              syndactyly_between_2nd_and_3rd_toes,
+                                              contractures_and_camptodactyly_of_fingers_and_toes,
+                                              contractures_of_fingers,
+                                              na.rm = TRUE)) |> 
+  mutate(vocal_cord_palsy_ind = pmax(partial_vocal_cord_paresis,
+                                     bilateral_vocal_cord_paralysis,
+                                     feeding_intolerance_and_vocal_cord_paralysis,
+                                     na.rm = TRUE)) |> 
+  mutate(arthrogryposis_contractures_other_ind = pmax(arthrogryposis_93,
+                                                      arthrogryposis_62,
+                                                      arthrogryposis_189,
+                                                      contractures_138,
+                                                      arthrogryposis_239,
+                                                      contractures_292,
+                                                      limb_hypotrophy,
+                                                      contractures_at_knees_and_elbows,
+                                                      micrognathia_flexed_deform_lower_limb_at_knee,
+                                                      multiple_joint_contractures,
+                                                      flexion_deformity_of_all_4_limbs,
+                                                      na.rm = TRUE)) |> 
+  mutate(hypercapnia_ind = pmax(contractures_of_hands_and_feet_and_hypercapnia,
+                                hypercapnia, na.rm = TRUE)) |> 
+  mutate(cleft_lip_ind = pmax(bilateral_cleft_lips, 
+                              bilateral_cleft_lip,
+                              cleft_lip_b_l,
+                              na.rm = TRUE)) |> 
+  mutate(inspiratory_stridor_ind = pmax(inspiratory_stridor,
+                                        inspiratory_stridor_2,
+                                        inspiratory_stridor_3,
+                                        na.rm = TRUE)) |> 
+  mutate(polyhydramnios_ind = pmax(polyhydramnios,
+                                   monochorionic_diamniotic_twin_pregnancy_polyhydramnios, na.rm = TRUE)) |> 
+  mutate(coarse_facial_features_ind = pmax(coarse_facial_features,
+                                           course_features,
+                                           coarse_facial_features_2, na.rm = TRUE)) |> 
+  mutate(oligohydramnios_ind = pmax(x22_days_in_nicu_10_days_intubated_respiratory_distress_oligohydramnios,
+                                    oligohydramnios, na.rm = TRUE)) |> 
+  mutate(respiratory_distress_ind = pmax(respiratory,
+                                         required_n_cpap, 
+                                         respiratory_failure,
+                                         on_and_off_on_oxygen,
+                                         x22_days_in_nicu_10_days_intubated_respiratory_distress_oligohydramnios,
+                                         tracheostomy_and_ventilatory_dependence,
+                                         respiratory_distress,
+                                         na.rm = TRUE)) |> 
+  mutate(hypotonia_ind = pmax(hypotonia_97,
+                              hypotonia_111,
+                              minimal_body_movements,
+                              na.rm = TRUE)) |> 
+  mutate(tracheostomy_ind = pmax(tracheostomy_and_ventilatory_dependence,
+                                 s_p_tracheostomy,
+                                 na.rm = TRUE)) |> 
+  mutate(prominent_ears_ind = pmax(large_ears,
+                                   prominent_ears,
+                                   protruding_ears,
+                                   
+                                   na.rm = TRUE)) |> 
+  mutate(posteriorly_angulated_ears_ind = pmax(
+    low_set_and_posteriorly_rotated_ears,
+    posteriorly_angulated_ears,
+    
+    na.rm = TRUE)) |> 
+  mutate(prominent_philtrum_ind = pmax(
+    
+    long_philtrum,
+    
+    prominent_pillars_of_philtrum,
+    
+    prominent_philtrum,
+    
+    
+    na.rm = TRUE)) |> 
+  mutate(upper_lip_dysmorph_ind = pmax(
+    thin_upper_lip,
+    upper_lip_tenting,
+    thin_lips_2,
+    v_shaped_upper_lip,
+    
+    na.rm = TRUE)) |> 
+  
+  mutate(hypomyelination_ind = pmax(suspect_hypomyelination,
+                                    delayed_myelination,
+                                    hypomyelination_on_repeat_mri,
+                                    severe_global_hypomyelination,
+                                    nearly_absent_myelination,
+                                    
+                                    na.rm = TRUE)) |> 
+  mutate(hypertonia_ind = pmax(hypertonia,
+                               hypertonicity,
+                               na.rm = TRUE)) |> 
+  mutate(cerebellar_hypoplasia_ind = pmax(cerebellar_hypoplasia_79,
+                                          cerebellar_hypoplasia_and_smooth_brain,
+                                          brainstem_and_cerebellar_hypoplasia,
+                                          cerebellar_hypoplasia_260
+                                          
+                                      ,
+                                          
+                                          na.rm = TRUE)) |> 
+  mutate(short_palpebral_fissures_ind = pmax(short_palpebral_fissures,
+                                             down_slanting_and_short_palpebral_fissures,
+                                             
+                                             na.rm = TRUE)) |> 
+  mutate(epicanthal_folds_ind = pmax(epicanthal_folds,
+                                     epicanthic_folds,
+                                     
+                                     na.rm = TRUE)) |> 
+  mutate(tube_feed_ind = pmax(fed_through_ng_tube_then_gastrostomy_tube_placed,
+                              tube_feeding,
+                              
+                              na.rm = TRUE)) |> 
+  mutate(dysmorphic_features_ind = pmax(dysmorphic_features,
+                                        dysmorphism,
+                                        
+                                        na.rm = TRUE)) |> 
+  mutate(patent_ductus_arteriosus_ind = pmax(patent_ductus_arteriosus,
+                                             patent_ductus_arteriosus_and_interatrial_defect_requiring_catheterism,
+                                             persistent_ductus_arteriosus_at_birth,
+                                             cvs_pda,
+                                             
+                                             na.rm = TRUE)) |> 
+  mutate(small_anterior_fontanel_ind = pmax(small_anterior_fontanel,
+                                            small_af,
+                                            
+                                            na.rm = TRUE)) |> 
+  mutate(receding_forehead_ind = pmax(receding_forehead,
+                                      high_forehead,
+                                      
+                                      na.rm = TRUE)) |> 
+  mutate(tracheo_laryngomalacia_ind = pmax(tracheo_laryngomalacia,
+                                           laryngomalacia,
+                                           
+                                           na.rm = TRUE)) |> 
+    mutate(respiratory_infections = pmax(recidivating_respiratory_infections,
+                                           recurrent_respiratory_and_urinary_tract_infections,
+                                           
+                                           na.rm = TRUE)) |> 
+  mutate(gerd_ind = pmax(gerd,
+                         ger,
+                         na.rm = TRUE)) |> 
+    mutate(enlarged_ventricles = pmax(enlarged_lateral_ventricles_and_extra_axial_fluid_spaces,
+                                      mild_dilatation_of_the_ventricles_and_enlargement_of_extra_axial_fluid_spaces,
+                                      prominent_fourth_ventricle_and_cisterna_magna,
+                                      
+                                      
+                         na.rm = TRUE)) |> 
+  mutate(thin_corpus_collosum_ind = pmax(thin_cc,
+                                         thin_corpus_callosum,
+                                         thin_corpus_callosum_2,
+                                         under_developed_cerebellar_inferior_vermis_and_thinning_of_corpus_callosum,
+                                         na.rm = TRUE)) |> 
+    mutate(eeg_normal = str_detect(eeg, "(?<![A|a]b)normal")) |> 
+  mutate(feeding_swallow_dysfxn_ind = case_when(
+    feeding_swallow_dysfxn == "none" ~ 0,
+    feeding_swallow_dysfxn == "not done" ~ NA_real_,
+    is.na(feeding_swallow_dysfxn) ~ NA_real_,
+    TRUE ~ 1
+    
+    )) |> 
+  mutate(tone = case_when(
+    hypertonia_ind == 1 ~ "high",
+    hypotonia_ind == 1 ~ "low",
+    TRUE ~ tone
+    )) |>
+  mutate(tone = fct_recode(tone,
+    low = "hypotonia")) |>
+    mutate(dtr = ifelse(severely_diminished_dt_rs_in_lower_extremities == 1, "reduced", dtr)) |>
+    mutate(dtr = fct_recode(dtr,
+    reduced = "decreased",
+    brisk = "brisk?",
+    normal = "present",
+    reduced = "hyporeflexia"
+    )) |>
+  mutate(bifid_uvula = and_bifid_uvula) |> 
+  mutate(under_developed_cerebellar_inferior_vermis = under_developed_cerebellar_inferior_vermis_and_thinning_of_corpus_callosum) |> 
+  select(-c(microcephaly_60, 
+                                 microcephaly_103, 
+                                 microcephaly_187, 
+            and_bifid_uvula,
+            microcephaly_with_simplified_gyral_pattern, 
+            microcephaly_with_sgp,
+            head_ct_2_mo_microcephaly,
+            microcephaly_with_moderate_sgp_and_relative_small_cerebellum_and_at_lesser_degree_brainstem,
+            under_developed_cerebellar_inferior_vermis_and_thinning_of_corpus_callosum,
+            mri_microcephaly_with_sgp, 
+            microcephaly_with_sgp_and_small_cerebrum,
+            abnormal_gyral_pattern_dysgyria,
+            rocker_bottom_feet,
+            iugr,
+            iugr_2,
+            cvs_pda,
+            mild_iugr,
+            g7p5_1l2_at_37_3_previous_4_cs_antenatal_us_showed_bilateral_talipes, 
+            bilateral_clubfoot,
+            contractures_of_hands_and_club_feet_2,
+            bilateral_talipes,
+            contractures_of_hands_and_club_feet,
+            bilateral_lower_limbs_talipes_and_joint_contractures,
+            flexion_contractures_of_the_joints_and_club_feet,
+            talipus_bilaterally,
+            talipus_bilaterally_2,
+            bilateral_clubfeed,
+            rocker_bottom_feet_76,
+            enlarged_lateral_ventricles_and_extra_axial_fluid_spaces,
+                                      mild_dilatation_of_the_ventricles_and_enlargement_of_extra_axial_fluid_spaces,
+                                      prominent_fourth_ventricle_and_cisterna_magna,
+            hypercapnia,
+            rocker_bottom_feet_118,
+            rocker_bottom_feet_177,
+            bilaterally_adducted_thumbs_and_rocker_bottom_feet,
+            congenital_vertical_talus,
+            vertical_talus,
+            rocker_bottom_feet_288,
+            contractures_of_fingers_and_feet,
+            contractures_of_hands_and_feet,
+            contractures_of_hands_and_feet_and_hypercapnia,
+            contractures_of_hands_and_club_feet_2,
+            bilateral_lower_limbs_talipes_and_joint_contractures,
+            flexion_contractures_of_the_joints_and_club_feet,
+            clenched_hands_71, 
+            long_2nd_finger,
+            suspected_syndactyly,
+            contractures_of_fingers_and_feet,
+            contractures_of_hands,
+            contractures_of_hands_and_feet,
+            contractures_of_hands_and_feet_and_hypercapnia,
+            hypertonic_fingers_and_toes,
+            contractures_of_hands_and_club_feet,
+            found_with_mild_dysmorphic_features_and_contractures_after_birth,
+            clenched_hands_146,
+            contractures_of_hands_and_club_feet_2,
+            clenched_hands_and_contractures,
+            contractures_and_bilateral_camptodactyly_of_fingers_and_toes,
+            adducted_thumbs,
+            bilaterally_adducted_thumbs_and_rocker_bottom_feet,
+            clenched_fist,
+             hypertonia_ind,
+    hypotonia_ind,
+            overlapping_fingers,
+            contractures_and_camptodactyly_of_the_left_hand,
+            syndactyly_between_2nd_and_3rd_toes,
+            contractures_and_camptodactyly_of_fingers_and_toes,
+            contractures_of_fingers,
+            partial_vocal_cord_paresis,
+            recidivating_respiratory_infections,
+                                           recurrent_respiratory_and_urinary_tract_infections,
+            bilateral_vocal_cord_paralysis,
+            feeding_intolerance_and_vocal_cord_paralysis,
+            arthrogryposis_62,
+            arthrogryposis_93,
+            arthrogryposis_189,
+            contractures_138,
+            arthrogryposis_239,
+            contractures_292,
+            limb_hypotrophy,
+            contractures_at_knees_and_elbows,
+            micrognathia_flexed_deform_lower_limb_at_knee,
+            multiple_joint_contractures,
+            flexion_deformity_of_all_4_limbs,
+            bilateral_cleft_lips, 
+            bilateral_cleft_lip,
+            severely_diminished_dt_rs_in_lower_extremities,
+            cleft_lip_b_l,
+            widely_spaced_nipples_and_rocker_bottom_feet,
+            inspiratory_stridor,
+            inspiratory_stridor_2,
+            inspiratory_stridor_3,
+            polyhydramnios,
+            monochorionic_diamniotic_twin_pregnancy_polyhydramnios,
+            coarse_facial_features,
+            course_features,
+            coarse_facial_features_2,
+            x22_days_in_nicu_10_days_intubated_respiratory_distress_oligohydramnios,
+            oligohydramnios,
+            respiratory,
+            required_n_cpap, 
+            respiratory_failure,
+            on_and_off_on_oxygen,
+            x22_days_in_nicu_10_days_intubated_respiratory_distress_oligohydramnios,
+            tracheostomy_and_ventilatory_dependence,
+            respiratory_distress,
+            hypotonia_97,
+            hypotonia_111,
+            minimal_body_movements,
+            tracheostomy_and_ventilatory_dependence,
+            s_p_tracheostomy,
+            large_ears,
+            simple_helices,
+            prominent_ears,
+            low_set_ears,
+            protruding_ears,
+            low_set_and_posteriorly_rotated_ears,
+            dysmorphic_low_set_ears,
+            posteriorly_angulated_ears,
+            large_ears,
+            prominent_ears,
+            protruding_ears,
+            low_set_and_posteriorly_rotated_ears,
+            posteriorly_angulated_ears,
+            long_philtrum,
+            prominent_pillars_of_philtrum,
+            prominent_philtrum,
+            thin_upper_lip,
+            upper_lip_tenting,
+            thin_lips_2,
+            v_shaped_upper_lip,
+            suspect_hypomyelination,
+            delayed_myelination,
+            hypomyelination_on_repeat_mri,
+            severe_global_hypomyelination,
+            nearly_absent_myelination,
+            hypertonia,
+            hypertonicity,
+            cerebellar_hypoplasia_79,
+            cerebellar_hypoplasia_and_smooth_brain,
+            brainstem_and_cerebellar_hypoplasia,
+            cerebellar_hypoplasia_260,
+            short_palpebral_fissures,
+            down_slanting_and_short_palpebral_fissures,
+            epicanthal_folds,
+            epicanthic_folds,
+            fed_through_ng_tube_then_gastrostomy_tube_placed,
+            tube_feeding,
+            terminated,
+            locus,
+            no_91,
+            apgas_scores_5_7_7_dyspnea,
+            seizures,
+            dysmorphic_features,
+            dysmorphism,
+            patent_ductus_arteriosus,
+            patent_ductus_arteriosus_and_interatrial_defect_requiring_catheterism,
+            persistent_ductus_arteriosus_at_birth,
+            small_anterior_fontanel,
+            small_af,
+            receding_forehead,
+            high_forehead,
+            no_216,
+            tracheo_laryngomalacia,
+            laryngomalacia,
+            large,
+            gerd,
+            ger,
+            standard_chromosome_analysis_47_xyy,
+            no_focal_changes_in_brain,
+            thin_cc,
+            thin_corpus_callosum,
+            thin_corpus_callosum_2
+            
+  )) 
+
+colnames(x)
+
+```
+
+Twins?
+hearing?
