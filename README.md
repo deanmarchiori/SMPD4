@@ -4,9 +4,32 @@
 # SMPD4
 
 <!-- badges: start -->
+
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-The goal of SMPD4 is to …
+The goal of SMPD4 is to provide analysis ready data sets on SMPD4 data.
+
+Sphingomyelin Phosphodiesterase 4 (SMPD4) is a type of sphinogmyelinase
+protein encoded by the SMPD4 gene. Patients with a bi-allelic loss of
+function variants in this gene are associated with a condition known as
+neurodevelopmental disorder with microcephaly, arthrogryposis, and
+structural brain anomalies (NEDMABA;
+[618622](https://omim.org/entry/618622)).
+
+Few cases exist in the scientific literature with [Magini et
+al. (2019)](https://doi.org/10.1016/j.ajhg.2019.08.006) reporting 23
+members of 12 unrelated families. The genotype-phenotype relationship of
+NEDMABA is heterogeneous and aside from case-reports, little data is
+available for statistical analysis. Magini et al. (2019) offer a
+supplementary table with summarised clinical phenotype data of the
+included subjects. Unfortunately these data are non standardised,
+heterogeneous and largely textual based. This project aims to
+standardise and process this data into tidy format [(Wickham
+(2014))](https://doi.org/10.1016/j.ajhg.2019.08.006) so it is
+analysis-ready and extensible for other researchers to better understand
+the relationship between clinical factors discovered in the literature.
 
 ## Installation
 
@@ -20,39 +43,51 @@ devtools::install_github("deanmarchiori/SMPD4")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
-
 ``` r
 library(SMPD4)
-## basic example code
+
+data("smpd4_phenotype")
+head(smpd4_phenotype[,1:20])
+#>    id family individual deceased survival_time variant_type locus_1 locus_2
+#> 1 1_1      1          1     TRUE            30   homozygote    1320      NA
+#> 2 1_2      1          2     TRUE            60   homozygote    1320      NA
+#> 3 1_3      1          3     TRUE            30   homozygote    1320      NA
+#> 4 1_4      1          4     TRUE          1095   homozygote    1320      NA
+#> 5 2_1      2          1     TRUE          2190   homozygote    1483      NA
+#> 6 2_2      2          2    FALSE          1825   homozygote    1483      NA
+#>   gender ethnicity consanguineous termination birth_gestation
+#> 1 female   Turkish           TRUE       FALSE              39
+#> 2   male   Turkish           TRUE       FALSE              37
+#> 3   male   Turkish           TRUE       FALSE              36
+#> 4 female   Turkish           TRUE       FALSE              38
+#> 5 female   Morocco           TRUE       FALSE              37
+#> 6   male   Morocco           TRUE       FALSE              37
+#>   route_vaginal_vs_c_sect birth_weight birth_ofc birth_length age_at_demise
+#> 1                     SVD         2175      30.5           NA            30
+#> 2                      CS         1860      31.0           NA            60
+#> 3                      CS         1955      30.0           NA             2
+#> 4                      CS         2780      30.5           41          1095
+#> 5                      CS         2045      29.0           39          2190
+#> 6                      CS         2300        NA           NA            NA
+#>   age_at_last_follow_up microcephaly_ind
+#> 1                    30                1
+#> 2                    60                1
+#> 3                    30                1
+#> 4                  1095                1
+#> 5                    NA                1
+#> 6                  1825                1
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
+## References
 
-``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
-```
+Magini, P., Smits, D. J., Vandervore, L., Schot, R., Columbaro, M.,
+Kasteleijn, E., … & Mancini, G. M. (2019). Loss of SMPD4 causes a
+developmental disorder characterized by microcephaly and congenital
+arthrogryposis. The American Journal of Human Genetics, 105(4), 689-705.
+<https://doi.org/10.1016/j.ajhg.2019.08.006>
 
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date. `devtools::build_readme()` is handy for this. You could also
-use GitHub Actions to re-render `README.Rmd` every time you push. An
-example workflow can be found here:
-<https://github.com/r-lib/actions/tree/v1/examples>.
-
-You can also embed plots, for example:
-
-<img src="man/figures/README-pressure-1.png" width="100%" />
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub and CRAN.
+Wickham, H. . (2014). Tidy Data. Journal of Statistical Software,
+59(10), 1–23. <https://doi.org/10.18637/jss.v059.i10>
 
 # Data use and licencing
 
