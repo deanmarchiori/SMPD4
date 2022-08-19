@@ -50,8 +50,8 @@ smpd4_phenotype <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_name
     ),
     variant_type = tidyr::replace_na(variant_type, "compound heterozygote"),
     locus = stringr::str_extract_all(smpd4_variant, "(?<=c.)\\d+"),
-    locus_1 = purrr::map(locus, ~ purrr::pluck(.x, 1, .default = NA_character_)),
-    locus_2 = purrr::map(locus, ~ purrr::pluck(.x, 2, .default = NA_character_)),
+    locus_1 = as.numeric(purrr::map_chr(locus, ~ purrr::pluck(.x, 1, .default = NA_character_))),
+    locus_2 = as.numeric(purrr::map_chr(locus, ~ purrr::pluck(.x, 2, .default = NA_character_))),
     birth_weight = ifelse(
       readr::parse_number(birth_weight) < 1000,
       1000 * readr::parse_number(birth_weight),
@@ -62,7 +62,7 @@ smpd4_phenotype <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_name
       readr::parse_number(birth_ofc) / 10,
       readr::parse_number(birth_ofc)
     ),
-    birth_length = readr::parse_number(birth_length),
+    birth_length = readr::parse_number(birth_length, na = c("nd", "NA", "not available")),
     age_at_demise = dplyr::case_when(
       stringr::str_detect(age_at_demise, "deceased") ~ 180,
       termination == TRUE ~ 0,
@@ -422,12 +422,12 @@ smpd4_phenotype <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_name
   ) |>
   dplyr::mutate(
     eeg_normal = stringr::str_detect(eeg, "(?<![A|a]b)normal"),
-    feeding_swallow_dysfxn_ind = dplyr::case_when(
+    feeding_swallow_dysfxn_ind = as.factor(dplyr::case_when(
       feeding_swallow_dysfxn == "none" ~ 0,
       feeding_swallow_dysfxn == "not done" ~ NA_real_,
       is.na(feeding_swallow_dysfxn) ~ NA_real_,
       TRUE ~ 1
-    ),
+    )),
     tone = dplyr::case_when(hypertonia_ind == 1 ~ "high",
                      hypotonia_ind == 1 ~ "low",
                      TRUE ~ tone),
@@ -665,6 +665,9 @@ smpd4_phenotype <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_name
     age_at_last_follow_up,
     ends_with('ind'),
     everything()
-  )
+  ) |> 
+  dplyr::mutate(across(where(is.character), as.factor),
+                across(c(1, 54:85), as.character),
+                across(where(is.integer), as.factor))
 
 usethis::use_data(smpd4_phenotype, overwrite = TRUE)
