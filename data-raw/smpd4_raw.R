@@ -1,114 +1,105 @@
----
-title: "SMPD4"
-author: "Dean Marchiori"
-date: "8/7/2022"
-output: pdf_document
----
+## code to prepare `smpd4` dataset goes here
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r}
-library(tidyverse)
-library(readxl)
 library(janitor)
-```
+library(readxl)
+library(tidyr)
+library(stringr)
+library(tibble)
+library(forcats)
+library(readr)
+library(purrr)
 
-```{r}
-pheno <- read_excel('data/mmc2.xlsx', n_max = 66, col_names = FALSE)
-
-x <- pheno |>
-  unite("feature", 1:2) |>
-  mutate(feature = str_remove(feature, "_NA|NA_|NA")) |>
+smpd4_phenotype <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_names = FALSE) |>
+  tidyr::unite("feature", 1:2) |>
+  dplyr::mutate(feature = stringr::str_remove(feature, "_NA|NA_|NA")) |>
   t() |>
-  as_tibble() |>
-  row_to_names(row_number = 1) |>
-  clean_names() |>
-  mutate(across(everything(), ~ str_replace(., "n\\.a\\.", NA_character_))) |>
+  tibble::as_tibble() |>
+  janitor::row_to_names(row_number = 1) |>
+  janitor::clean_names() |>
+  dplyr::mutate(across(tidyr::everything(), ~ stringr::str_replace(., "n\\.a\\.", NA_character_))) |>
   # MAKE UNIQUE IDS
-  mutate(
-    family = str_extract(family_contributing_institute, "(?<=Family )\\d+"),
-    individual = str_extract(
+  dplyr::mutate(
+    family = stringr::str_extract(family_contributing_institute, "(?<=Family )\\d+"),
+    individual = stringr::str_extract(
       family_contributing_institute,
       "(?<=Individual |[T|t]win |Sibling )\\d+"
     )
   ) |>
-  replace_na(list(individual = 1)) |>
-  unite("id", family, individual, remove = FALSE) |>
-  mutate(
+  tidyr::replace_na(list(individual = 1)) |>
+  tidyr::unite("id", family, individual, remove = FALSE) |>
+  dplyr::mutate(
     gender = tolower(gender),
-    gender = fct_recode(gender, female = "female fetus"),
+    gender = forcats::fct_recode(gender, female = "female fetus"),
     consanguineous = ifelse(
-      str_detect(family_hx, "[N|n]on-consanguineous|not related"),
+      stringr::str_detect(family_hx, "[N|n]on-consanguineous|not related"),
       FALSE,
       TRUE
     ),
-    termination = str_detect(birth_gestation, "TOP"),
+    termination = stringr::str_detect(birth_gestation, "TOP"),
     birth_gestation = ifelse(
-      str_detect(birth_gestation, "term"),
+      stringr::str_detect(birth_gestation, "term"),
       40,
-      parse_number(birth_gestation)
+      readr::parse_number(birth_gestation)
     ),
-    route_vaginal_vs_c_sect = ifelse(str_detect(route_vaginal_vs_c_sect, "vaginal"), "SVD", "CS"),
+    route_vaginal_vs_c_sect = ifelse(stringr::str_detect(route_vaginal_vs_c_sect, "vaginal"), "SVD", "CS"),
     variant_type = tolower(
-      str_extract(
+      stringr::str_extract(
         smpd4_variant,
         "[H|h]omozygo[te|us]+|[C|c]ompound heterozygote"
       )
     ),
-    variant_type = replace_na(variant_type, "compound heterozygote"),
-    locus = str_extract_all(smpd4_variant, "(?<=c.)\\d+"),
-    locus_1 = map(locus, ~ pluck(.x, 1, .default = NA_character_)),
-    locus_2 = map(locus, ~ pluck(.x, 2, .default = NA_character_)),
+    variant_type = tidyr::replace_na(variant_type, "compound heterozygote"),
+    locus = stringr::str_extract_all(smpd4_variant, "(?<=c.)\\d+"),
+    locus_1 = purrr::map(locus, ~ purrr::pluck(.x, 1, .default = NA_character_)),
+    locus_2 = purrr::map(locus, ~ purrr::pluck(.x, 2, .default = NA_character_)),
     birth_weight = ifelse(
-      parse_number(birth_weight) < 1000,
-      1000 * parse_number(birth_weight),
-      parse_number(birth_weight)
+      readr::parse_number(birth_weight) < 1000,
+      1000 * readr::parse_number(birth_weight),
+      readr::parse_number(birth_weight)
     ),
     birth_ofc = ifelse(
-      parse_number(birth_ofc) > 100,
-      parse_number(birth_ofc) / 10,
-      parse_number(birth_ofc)
+      readr::parse_number(birth_ofc) > 100,
+      readr::parse_number(birth_ofc) / 10,
+      readr::parse_number(birth_ofc)
     ),
-    birth_length = parse_number(birth_length),
-    age_at_demise = case_when(
-      str_detect(age_at_demise, "deceased") ~ 180,
+    birth_length = readr::parse_number(birth_length),
+    age_at_demise = dplyr::case_when(
+      stringr::str_detect(age_at_demise, "deceased") ~ 180,
       termination == TRUE ~ 0,
-      str_detect(age_at_demise, "month") ~ parse_number(age_at_demise) * 30,
-      str_detect(age_at_demise, "day|pp") ~ parse_number(age_at_demise),
-      str_detect(age_at_demise, "y|yr") ~ parse_number(age_at_demise) * 365
+      stringr::str_detect(age_at_demise, "month") ~ readr::parse_number(age_at_demise) * 30,
+      stringr::str_detect(age_at_demise, "day|pp") ~ readr::parse_number(age_at_demise),
+      stringr::str_detect(age_at_demise, "y|yr") ~ readr::parse_number(age_at_demise) * 365
     ),
-    deceased = case_when(
+    deceased = dplyr::case_when(
       termination == TRUE ~ TRUE,
-      str_detect(age_at_demise, "alive") ~ FALSE,
+      stringr::str_detect(age_at_demise, "alive") ~ FALSE,
       is.na(age_at_demise) ~ FALSE,
       TRUE ~ TRUE
     ),
-    age_at_last_follow_up = case_when(
-      str_detect(age_at_last_follow_up, "month") ~ parse_number(age_at_last_follow_up) * 30,
-      str_detect(age_at_last_follow_up, "day") ~ parse_number(age_at_last_follow_up),
-      str_detect(age_at_last_follow_up, "week") ~ parse_number(age_at_last_follow_up) * 7,
-      str_detect(age_at_last_follow_up, "y|yr") ~ parse_number(age_at_last_follow_up) * 365
+    age_at_last_follow_up = dplyr::case_when(
+      stringr::str_detect(age_at_last_follow_up, "month") ~ readr::parse_number(age_at_last_follow_up) * 30,
+      stringr::str_detect(age_at_last_follow_up, "day") ~ readr::parse_number(age_at_last_follow_up),
+      stringr::str_detect(age_at_last_follow_up, "week") ~ readr::parse_number(age_at_last_follow_up) * 7,
+      stringr::str_detect(age_at_last_follow_up, "y|yr") ~ readr::parse_number(age_at_last_follow_up) * 365
     ),
     survival_time = pmax(age_at_last_follow_up, age_at_demise, na.rm = TRUE),
-    seizure = !str_detect(seizures_age_started, "[N|n]one|no "),
-    other_neurologic_dysfunction = replace_na(other_neurologic_dysfunction, "no"),
-    sleeping_problem = fct_recode(sleeping_problem,
+    seizure = !stringr::str_detect(seizures_age_started, "[N|n]one|no "),
+    other_neurologic_dysfunction = tidyr::replace_na(other_neurologic_dysfunction, "no"),
+    sleeping_problem = forcats::fct_recode(sleeping_problem,
                                   yes = "yes, supination increases stridor",
                                   no = "nd")
   ) |>
   # SEPARATE TEXT
-  separate_rows(pregnancy, sep = ", |and ") |>
-  pivot_wider(
+  tidyr::separate_rows(pregnancy, sep = ", |and ") |>
+  tidyr::pivot_wider(
     names_from = pregnancy,
     values_from = pregnancy,
     values_fn = \(x) 1L,
     values_fill = 0
   ) |>
   
-  separate_rows(other_neurologic_dysfunction, sep = ", ") |>
-  pivot_wider(
+  tidyr::separate_rows(other_neurologic_dysfunction, sep = ", ") |>
+  tidyr::pivot_wider(
     names_from = other_neurologic_dysfunction,
     values_from = other_neurologic_dysfunction,
     values_fn = \(x) 1L,
@@ -116,8 +107,8 @@ x <- pheno |>
     names_repair = "unique"
   ) |>
   
-  separate_rows(neonatal_issues, sep = ", |\\. ") |>
-  pivot_wider(
+  tidyr::separate_rows(neonatal_issues, sep = ", |\\. ") |>
+  tidyr::pivot_wider(
     names_from = neonatal_issues,
     values_from = neonatal_issues,
     values_fn = \(x) 1L,
@@ -125,8 +116,8 @@ x <- pheno |>
     names_repair = "unique"
   ) |>
   
-  separate_rows(facial_dysmorphisms, sep = ", |\\. ") |>
-  pivot_wider(
+  tidyr::separate_rows(facial_dysmorphisms, sep = ", |\\. ") |>
+  tidyr::pivot_wider(
     names_from = facial_dysmorphisms,
     values_from = facial_dysmorphisms,
     values_fn = \(x) 1L,
@@ -134,9 +125,9 @@ x <- pheno |>
     names_repair = "unique"
   ) |>
   
-  mutate(other_organ_defects = str_squish(other_organ_defects)) |>
-  separate_rows(other_organ_defects, sep = ", |\\. ") |>
-  pivot_wider(
+  dplyr::mutate(other_organ_defects = stringr::str_squish(other_organ_defects)) |>
+  tidyr::separate_rows(other_organ_defects, sep = ", |\\. ") |>
+  tidyr::pivot_wider(
     names_from = other_organ_defects,
     values_from = other_organ_defects,
     values_fn = \(x) 1L,
@@ -144,9 +135,9 @@ x <- pheno |>
     names_repair = "unique"
   ) |>
   
-  mutate(other_medical_issues = str_squish(other_medical_issues)) |>
-  separate_rows(other_medical_issues, sep = ", |\\. ") |>
-  pivot_wider(
+  dplyr::mutate(other_medical_issues = stringr::str_squish(other_medical_issues)) |>
+  tidyr::separate_rows(other_medical_issues, sep = ", |\\. ") |>
+  tidyr::pivot_wider(
     names_from = other_medical_issues,
     values_from = other_medical_issues,
     values_fn = \(x) 1L,
@@ -154,9 +145,9 @@ x <- pheno |>
     names_repair = "unique"
   ) |>
   
-  mutate(MRI_brain = str_squish(na_4)) |>
-  separate_rows(MRI_brain, sep = ", |\\. ") |>
-  pivot_wider(
+  dplyr::mutate(MRI_brain = stringr::str_squish(na_4)) |>
+  tidyr::separate_rows(MRI_brain, sep = ", |\\. ") |>
+  tidyr::pivot_wider(
     names_from = MRI_brain,
     values_from = MRI_brain,
     values_fn = \(x) 1L,
@@ -164,9 +155,9 @@ x <- pheno |>
     names_repair = "unique"
   ) |>
   
-  mutate(other = str_squish(other)) |>
-  separate_rows(other, sep = ", |\\. ") |>
-  pivot_wider(
+  dplyr::mutate(other = stringr::str_squish(other)) |>
+  tidyr::separate_rows(other, sep = ", |\\. ") |>
+  tidyr::pivot_wider(
     names_from = other,
     values_from = other,
     values_fn = \(x) 1L,
@@ -175,10 +166,10 @@ x <- pheno |>
   ) |>
   
   janitor::clean_names() |>
-  mutate(widely_spaced_nipples = widely_spaced_nipples_and_rocker_bottom_feet,
+  dplyr::mutate(widely_spaced_nipples = widely_spaced_nipples_and_rocker_bottom_feet,
          rocker_bottom_feet = widely_spaced_nipples_and_rocker_bottom_feet) |>
   # COMBINE BINARY INDICATORS WHICH ARE DUPLICATES
-  mutate(
+  dplyr::mutate(
     microcephaly_ind = pmax(
       microcephaly_74,
       microcephaly_110,
@@ -429,25 +420,25 @@ x <- pheno |>
       na.rm = TRUE
     )
   ) |>
-  mutate(
-    eeg_normal = str_detect(eeg, "(?<![A|a]b)normal"),
-    feeding_swallow_dysfxn_ind = case_when(
+  dplyr::mutate(
+    eeg_normal = stringr::str_detect(eeg, "(?<![A|a]b)normal"),
+    feeding_swallow_dysfxn_ind = dplyr::case_when(
       feeding_swallow_dysfxn == "none" ~ 0,
       feeding_swallow_dysfxn == "not done" ~ NA_real_,
       is.na(feeding_swallow_dysfxn) ~ NA_real_,
       TRUE ~ 1
     ),
-    tone = case_when(hypertonia_ind == 1 ~ "high",
+    tone = dplyr::case_when(hypertonia_ind == 1 ~ "high",
                      hypotonia_ind == 1 ~ "low",
                      TRUE ~ tone),
-    tone = fct_recode(tone,
+    tone = forcats::fct_recode(tone,
                       low = "hypotonia"),
     dtr = ifelse(
       severely_diminished_dt_rs_in_lower_extremities == 1,
       "reduced",
       dtr
     ),
-    dtr = fct_recode(
+    dtr = forcats::fct_recode(
       dtr,
       reduced = "decreased",
       brisk = "brisk?",
@@ -457,9 +448,9 @@ x <- pheno |>
     bifid_uvula = and_bifid_uvula,
     under_developed_cerebellar_inferior_vermis = under_developed_cerebellar_inferior_vermis_and_thinning_of_corpus_callosum
   ) |>
-  select(-starts_with("na")) |>
-  select(-starts_with("apgar")) |>
-  select(
+  dplyr::select(-starts_with("na")) |>
+  dplyr::select(-starts_with("apgar")) |>
+  dplyr::select(
     -c(
       microcephaly_74,
       microcephaly_110,
@@ -652,7 +643,7 @@ x <- pheno |>
       thin_corpus_callosum_2
     )
   ) |>
-  select(
+  dplyr::select(
     id,
     family,
     individual,
@@ -675,6 +666,5 @@ x <- pheno |>
     ends_with('ind'),
     everything()
   )
-```
 
-
+usethis::use_data(smpd4_phenotype, overwrite = TRUE)

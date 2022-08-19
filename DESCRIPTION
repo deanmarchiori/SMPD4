@@ -1,0 +1,25 @@
+Package: SMPD4
+Title: Summary of SMPD4-Related Clinical Phenotype
+Version: 0.0.0.9000
+Authors@R: 
+    c(
+    person("Dean", "Marchiori", , "deanmarchiori@gmail.com", role = c("aut", "cre")),
+    person("American Society of Human Genetics", role = c("cph"))
+  )
+Description: This package contains Table S2 from Magini et.al. (2019). This supplimentary data describes the clinical phenotype of patients included in the study. The data has been transformed into an analysis ready dataset in tidy format. 
+License: file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+LazyData: true
+Depends: 
+    R (>= 2.10)
+Imports: 
+    janitor,
+    tidyr,
+    readxl,
+    stringr,
+    tibble,
+    forcats,
+    readr,
+    purrr
