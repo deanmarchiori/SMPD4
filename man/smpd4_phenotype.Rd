@@ -3,9 +3,13 @@
 \docType{data}
 \name{smpd4_phenotype}
 \alias{smpd4_phenotype}
-\title{Summary of SMPD4-Related Clinical Phenotype}
+\title{SMPD4-Related Clinical Phenotype Data Set}
 \format{
 A tibble: 21 x 152
+
+\describe{
+\item{_ind}{columns ending in _ind are indicator columns created by mergine duplicate tokenised terms into one feature.}
+}
 }
 \source{
 \url{https://doi.org/10.1016/j.ajhg.2019.08.006}
