@@ -49,6 +49,7 @@ smpd4_phenotype <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_name
       )
     ),
     variant_type = tidyr::replace_na(variant_type, "compound heterozygote"),
+    variant_type = forcats::fct_recode(variant_type, homozygote = "homozygous"),
     locus = stringr::str_extract_all(smpd4_variant, "(?<=c.)\\d+"),
     locus_1 = as.numeric(purrr::map_chr(locus, ~ purrr::pluck(.x, 1, .default = NA_character_))),
     locus_2 = as.numeric(purrr::map_chr(locus, ~ purrr::pluck(.x, 2, .default = NA_character_))),
