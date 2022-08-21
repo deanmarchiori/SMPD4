@@ -6,7 +6,7 @@
 <!-- badges: start -->
 
 [![Lifecycle:
-experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 <!-- badges: end -->
 
 The goal of SMPD4 is to provide analysis ready data sets on SMPD4 data.
@@ -89,17 +89,12 @@ arthrogryposis. The American Journal of Human Genetics, 105(4), 689-705.
 Wickham, H. . (2014). Tidy Data. Journal of Statistical Software,
 59(10), 1–23. <https://doi.org/10.18637/jss.v059.i10>
 
-# Data use and licencing
+## Data use and licencing
 
-These data are Copyright 2019 American Society of Human Genetics.
-
-Data is used under Elsevier user license
+These data are Copyright 2019 American Society of Human Genetics. Data
+is used under Elsevier user license
 <https://www.elsevier.com/about/policies/open-access-licenses/elsevier-user-license>
 
 Use permitted for read, download, text and data mining. Used for
-Non-Commercial purposes.
-
-All outputs of this R package are data mining related for non-commerical
-use.
-
-DOI: <https://doi.org/10.1016/j.ajhg.2019.08.006>
+Non-Commercial purposes. All outputs of this R package are data mining
+related for non-commerical use.

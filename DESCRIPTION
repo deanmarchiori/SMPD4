@@ -22,5 +22,6 @@ Imports:
     tibble,
     forcats,
     readr,
-    purrr
+    purrr,
+    lifecycle
 URL: https://deanmarchiori.github.io/SMPD4
