@@ -18,7 +18,7 @@ A tibble: 21 x 152
 smpd4_phenotype
 }
 \description{
-A dataset from Table S2 of Magini, Pamela, et al. "Loss of SMPD4 causes a
+A dataset of clical features and phenotypes from Table S2 of Magini, Pamela, et al. "Loss of SMPD4 causes a
 developmental disorder characterized by microcephaly and congenital
 arthrogryposis." The American Journal of Human
 Genetics 105.4 (2019): 689-705.
