@@ -6,7 +6,7 @@ Authors@R:
     person("Dean", "Marchiori", , "deanmarchiori@gmail.com", role = c("aut", "cre")),
     person("American Society of Human Genetics", role = c("cph"))
   )
-Description: This package contains Table S2 from Magini et.al. (2019). This supplimentary data describes the clinical phenotype of patients included in the study. The data has been transformed into an analysis ready dataset in tidy format. 
+Description: This package contains data that describes the clinical phenotype of patients included in available studies of conditions relating to SMPD4 gene variants. The data has been transformed into an analysis ready dataset in tidy format. 
 License: file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

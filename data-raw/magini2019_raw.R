@@ -1,4 +1,4 @@
-## code to prepare `smpd4` dataset goes here
+## code to prepare `magini_2019` dataset goes here
 
 library(janitor)
 library(readxl)
@@ -9,7 +9,7 @@ library(forcats)
 library(readr)
 library(purrr)
 
-smpd4_phenotype <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_names = FALSE) |>
+magini_2019 <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_names = FALSE) |>
   tidyr::unite("feature", 1:2) |>
   dplyr::mutate(feature = stringr::str_remove(feature, "_NA|NA_|NA")) |>
   t() |>
@@ -207,6 +207,12 @@ smpd4_phenotype <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_name
       talipus_bilaterally,
       talipus_bilaterally_2,
       bilateral_clubfeed,
+      contractures_of_fingers_and_feet,
+      contractures_of_hands_and_feet,
+      contractures_of_hands_and_feet_and_hypercapnia,
+      contractures_of_hands_and_club_feet_2,
+      bilateral_lower_limbs_talipes_and_joint_contractures,
+      flexion_contractures_of_the_joints_and_club_feet,
       na.rm = TRUE
     ),
     rocker_bottom_feet_ind = pmax(
@@ -219,15 +225,6 @@ smpd4_phenotype <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_name
       vertical_talus,
       widely_spaced_nipples_and_rocker_bottom_feet,
       rocker_bottom_feet_295,
-      na.rm = TRUE
-    ),
-    contractures_feet_ind = pmax(
-      contractures_of_fingers_and_feet,
-      contractures_of_hands_and_feet,
-      contractures_of_hands_and_feet_and_hypercapnia,
-      contractures_of_hands_and_club_feet_2,
-      bilateral_lower_limbs_talipes_and_joint_contractures,
-      flexion_contractures_of_the_joints_and_club_feet,
       na.rm = TRUE
     ),
     contractures_hands_deform_ind = pmax(
@@ -668,7 +665,9 @@ smpd4_phenotype <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_name
     everything()
   ) |> 
   dplyr::mutate(across(where(is.character), as.factor),
-                across(c(1, 54:85), as.character),
-                across(where(is.integer), as.factor))
+                across(c(1, 2, 10, 54:85), as.character),
+                across(where(is.integer), as.factor)) |> 
+  dplyr::mutate(study = "Magini",
+                id = paste0(study, "_", id), .before = 1)
 
-usethis::use_data(smpd4_phenotype, overwrite = TRUE)
+usethis::use_data(magini_2019, overwrite = TRUE)

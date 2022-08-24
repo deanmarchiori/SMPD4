@@ -25,9 +25,14 @@ NEDMABA is heterogeneous and aside from case-reports, little data is
 available for statistical analysis. Magini et al. (2019) offer a
 supplementary table with summarised clinical phenotype data of the
 included subjects. Unfortunately these data are non standardised,
-heterogeneous and largely textual based. This project aims to
-standardise and process this data into tidy format [(Wickham
-(2014))](https://doi.org/10.1016/j.ajhg.2019.08.006) so it is
+heterogeneous and largely textual based.
+
+Further isolated examples exist in other papers and case studies, which
+have also been included (Bijarnia-Mahay et al. (2022), Ji et al. (2022),
+Monies et al. (2019), Ravenscroft et al. (2020)).
+
+This project aims to standardise and process this data into tidy format
+[(Wickham (2014))](https://doi.org/10.1016/j.ajhg.2019.08.006) so it is
 analysis-ready and extensible for other researchers to better understand
 the relationship between clinical factors discovered in the literature.
 
@@ -46,22 +51,22 @@ devtools::install_github("deanmarchiori/SMPD4")
 ``` r
 library(SMPD4)
 
-data("smpd4_phenotype")
-head(smpd4_phenotype[,1:20])
-#>    id family individual deceased survival_time variant_type locus_1 locus_2
-#> 1 1_1      1          1     TRUE            30   homozygote    1320      NA
-#> 2 1_2      1          2     TRUE            60   homozygote    1320      NA
-#> 3 1_3      1          3     TRUE            30   homozygote    1320      NA
-#> 4 1_4      1          4     TRUE          1095   homozygote    1320      NA
-#> 5 2_1      2          1     TRUE          2190   homozygote    1483      NA
-#> 6 2_2      2          2    FALSE          1825   homozygote    1483      NA
-#>   gender ethnicity consanguineous termination birth_gestation
-#> 1 female   Turkish           TRUE       FALSE              39
-#> 2   male   Turkish           TRUE       FALSE              37
-#> 3   male   Turkish           TRUE       FALSE              36
-#> 4 female   Turkish           TRUE       FALSE              38
-#> 5 female   Morocco           TRUE       FALSE              37
-#> 6   male   Morocco           TRUE       FALSE              37
+data("magini_2019")
+head(magini_2019[,1:20])
+#>    study         id family individual deceased survival_time variant_type
+#> 1 Magini Magini_1_1      1          1     TRUE            30   homozygote
+#> 2 Magini Magini_1_2      1          2     TRUE            60   homozygote
+#> 3 Magini Magini_1_3      1          3     TRUE            30   homozygote
+#> 4 Magini Magini_1_4      1          4     TRUE          1095   homozygote
+#> 5 Magini Magini_2_1      2          1     TRUE          2190   homozygote
+#> 6 Magini Magini_2_2      2          2    FALSE          1825   homozygote
+#>   locus_1 locus_2 gender ethnicity consanguineous termination birth_gestation
+#> 1    1320      NA female   Turkish           TRUE       FALSE              39
+#> 2    1320      NA   male   Turkish           TRUE       FALSE              37
+#> 3    1320      NA   male   Turkish           TRUE       FALSE              36
+#> 4    1320      NA female   Turkish           TRUE       FALSE              38
+#> 5    1483      NA female   Morocco           TRUE       FALSE              37
+#> 6    1483      NA   male   Morocco           TRUE       FALSE              37
 #>   route_vaginal_vs_c_sect birth_weight birth_ofc birth_length age_at_demise
 #> 1                     SVD         2175      30.5           NA            30
 #> 2                      CS         1860      31.0           NA            60
@@ -69,22 +74,43 @@ head(smpd4_phenotype[,1:20])
 #> 4                      CS         2780      30.5           41          1095
 #> 5                      CS         2045      29.0           39          2190
 #> 6                      CS         2300        NA           NA            NA
-#>   age_at_last_follow_up microcephaly_ind
-#> 1                    30                1
-#> 2                    60                1
-#> 3                    30                1
-#> 4                  1095                1
-#> 5                    NA                1
-#> 6                  1825                1
+#>   age_at_last_follow_up
+#> 1                    30
+#> 2                    60
+#> 3                    30
+#> 4                  1095
+#> 5                    NA
+#> 6                  1825
 ```
 
 ## References
+
+Bijarnia-Mahay, S., Somashekar, P. H., Kaur, P., Kulshrestha, S.,
+Ramprasad, V. L., Murugan, S., … & Shukla, A. (2022). Growth and
+neurodevelopmental disorder with arthrogryposis, microcephaly and
+structural brain anomalies caused by Bi-allelic partial deletion of
+SMPD4 gene. Journal of human genetics, 67(3), 133-136.
 
 Magini, P., Smits, D. J., Vandervore, L., Schot, R., Columbaro, M.,
 Kasteleijn, E., … & Mancini, G. M. (2019). Loss of SMPD4 causes a
 developmental disorder characterized by microcephaly and congenital
 arthrogryposis. The American Journal of Human Genetics, 105(4), 689-705.
-<https://doi.org/10.1016/j.ajhg.2019.08.006>
+
+Ji, W., Kong, X., Yin, H., Xu, J., & Wang, X. (2022). Case Report: Novel
+Biallelic Null Variants of SMPD4 Confirm Its Involvement in
+Neurodevelopmental Disorder With Microcephaly, Arthrogryposis, and
+Structural Brain Anomalies. Frontiers in Genetics, 13.
+
+Ravenscroft, G., Clayton, J. S., Faiz, F., Sivadorai, P., Milnes, D.,
+Cincotta, R., … & Davis, M. R. (2021). Neurogenetic fetal akinesia and
+arthrogryposis: genetics, expanding genotype-phenotypes and functional
+genomics. Journal of medical genetics, 58(9), 609-618.
+
+Monies, D., Abouelhoda, M., Assoum, M., Moghrabi, N., Rafiullah, R.,
+Almontashiri, N., … & Alkuraya, F. S. (2019). Lessons learned from
+large-scale, first-tier clinical exome sequencing in a highly
+consanguineous population. The American Journal of Human Genetics,
+104(6), 1182-1201.
 
 Wickham, H. . (2014). Tidy Data. Journal of Statistical Software,
 59(10), 1–23. <https://doi.org/10.18637/jss.v059.i10>
