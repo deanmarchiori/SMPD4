@@ -1,6 +1,6 @@
 Package: SMPD4
 Title: SMPD4-Related Clinical Phenotype Data
-Version: 2.0.0
+Version: 2.1.0
 Authors@R: 
     c(
     person("Dean", "Marchiori", , "deanmarchiori@gmail.com", role = c("aut", "cre")),
