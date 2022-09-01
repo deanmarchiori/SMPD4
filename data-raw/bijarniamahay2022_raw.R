@@ -1,3 +1,4 @@
+library(readr)
 bijarnia_mahay_2022 <- readr::read_csv('data-raw/bijarnia_mahay_2022.csv', col_types = cols(
   study = col_character(),
   id = col_character(),
@@ -52,9 +53,7 @@ bijarnia_mahay_2022 <- readr::read_csv('data-raw/bijarnia_mahay_2022.csv', col_t
   gerd_ind = col_factor(levels = c("0", "1"), ordered = FALSE, include_na = FALSE),
   thin_corpus_collosum_ind = col_factor(levels = c("0", "1"), ordered = FALSE, include_na = FALSE),
   feeding_swallow_dysfxn_ind = col_factor(levels = c("0", "1"), ordered = FALSE, include_na = FALSE),
-  seizures_age_started = col_factor(levels = c("7 weeks", "around 2ys", "from birth", "from birth (1st week)", 
-                                               "no clinical seizure", "no clinical sizure", "none", "None", 
-                                               "yes", "yes (< 4 months)", "yes (4 months)", "yes (unknown)"), ordered = FALSE, include_na = FALSE),
+  seizures_age_started = col_character(),
   seizure_type_s = col_character(),
   eeg = col_character(),
   sleeping_problem = col_character(),
@@ -86,7 +85,7 @@ bijarnia_mahay_2022 <- readr::read_csv('data-raw/bijarnia_mahay_2022.csv', col_t
   functional_tests = col_character(),
   metabolic_investigation = col_character(),
   cardiology = col_character(),
-  seizure = col_character(),
+  seizure = col_double(),
   agenesis_of_corpus_callosum = col_factor(levels = c("0", "1"), ordered = FALSE, include_na = FALSE),
   abnormal_pattern_of_cerebral_sulci = col_factor(levels = c("0", "1"), ordered = FALSE, include_na = FALSE),
   left_sided_gallbladder = col_factor(levels = c("0", "1"), ordered = FALSE, include_na = FALSE),
@@ -150,10 +149,11 @@ bijarnia_mahay_2022 <- readr::read_csv('data-raw/bijarnia_mahay_2022.csv', col_t
   widely_spaced_nipples = col_factor(levels = c("0", "1"), ordered = FALSE, include_na = FALSE),
   respiratory_infections = col_factor(levels = c("0", "1"), ordered = FALSE, include_na = FALSE),
   enlarged_ventricles = col_factor(levels = c("0", "1"), ordered = FALSE, include_na = FALSE),
-  eeg_normal = col_logical(),
+  eeg_normal = col_double(),
   bifid_uvula = col_factor(levels = c("0", "1"), ordered = FALSE, include_na = FALSE),
   under_developed_cerebellar_inferior_vermis = col_factor(levels = c("0", "1"), ordered = FALSE, include_na = FALSE)
 ))
 
 
 usethis::use_data(bijarnia_mahay_2022, overwrite = TRUE)
+

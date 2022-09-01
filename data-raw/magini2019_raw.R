@@ -25,7 +25,7 @@ magini_2019 <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_names = 
       "(?<=Individual |[T|t]win |Sibling )\\d+"
     )
   ) |>
-  tidyr::replace_na(list(individual = 1)) |>
+  tidyr::replace_na(list(individual = "1")) |>
   tidyr::unite("id", family, individual, remove = FALSE) |>
   dplyr::mutate(
     gender = tolower(gender),
@@ -422,8 +422,8 @@ magini_2019 <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_names = 
     eeg_normal = stringr::str_detect(eeg, "(?<![A|a]b)normal"),
     feeding_swallow_dysfxn_ind = as.factor(dplyr::case_when(
       feeding_swallow_dysfxn == "none" ~ 0,
-      feeding_swallow_dysfxn == "not done" ~ NA_real_,
-      is.na(feeding_swallow_dysfxn) ~ NA_real_,
+      feeding_swallow_dysfxn == "not done" ~ 0,
+      is.na(feeding_swallow_dysfxn) ~ 0,
       TRUE ~ 1
     )),
     tone = dplyr::case_when(hypertonia_ind == 1 ~ "high",
@@ -444,7 +444,13 @@ magini_2019 <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_names = 
       reduced = "hyporeflexia"
     ),
     bifid_uvula = and_bifid_uvula,
-    under_developed_cerebellar_inferior_vermis = under_developed_cerebellar_inferior_vermis_and_thinning_of_corpus_callosum
+    under_developed_cerebellar_inferior_vermis = under_developed_cerebellar_inferior_vermis_and_thinning_of_corpus_callosum,
+    hearing = ifelse(!str_detect(hearing, 'normal'), 1, 0),
+    hearing = replace_na(hearing, 0),
+    seizure = as.numeric(seizure),
+    seizure = replace_na(seizure, 0),
+    eeg_normal = as.numeric(eeg_normal),
+    eeg_normal = replace_na(eeg_normal, 1),
   ) |>
   dplyr::select(-starts_with("na")) |>
   dplyr::select(-starts_with("apgar")) |>
@@ -524,8 +530,6 @@ magini_2019 <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_names = 
       clenched_fist,
       medical_hospitalizations,
       medications,
-      hypertonia_ind,
-      hypotonia_ind,
       overlapping_fingers,
       contractures_and_camptodactyly_of_the_left_hand,
       syndactyly_between_2nd_and_3rd_toes,
@@ -626,6 +630,8 @@ magini_2019 <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_names = 
       persistent_ductus_arteriosus_at_birth,
       small_anterior_fontanel,
       small_af,
+      hypotonia_ind,
+      hypertonia_ind,
       receding_forehead,
       high_forehead,
       no_223,
@@ -665,7 +671,7 @@ magini_2019 <- readxl::read_excel('data-raw/mmc2.xlsx', n_max = 66, col_names = 
     everything()
   ) |> 
   dplyr::mutate(across(where(is.character), as.factor),
-                across(c(1, 2, 10, 54:85), as.character),
+                across(c(1, 2, 10, 53:78, 79:84), as.character),
                 across(where(is.integer), as.factor)) |> 
   dplyr::mutate(study = "Magini",
                 id = paste0(study, "_", id), .before = 1)
