@@ -15,13 +15,4 @@ LazyData: true
 Depends: 
     R (>= 2.10)
 Imports: 
-    janitor,
-    tidyr,
-    readxl,
-    stringr,
-    tibble,
-    forcats,
-    readr,
-    purrr,
-    lifecycle
 URL: https://deanmarchiori.github.io/SMPD4
