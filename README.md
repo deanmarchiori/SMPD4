@@ -39,7 +39,7 @@ the relationship between clinical factors discovered in the literature.
 ## Installation
 
 You can install the development version of SMPD4 from
-[GitHub](https://github.com/) with:
+[GitHub](https://github.com/deanmarchiori/SMPD4) with:
 
 ``` r
 # install.packages("devtools")
