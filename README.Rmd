@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 # SMPD4
 
 <!-- badges: start -->
-[![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
+[![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7071092.svg)](https://doi.org/10.5281/zenodo.7071092)
 <!-- badges: end -->
 
 The goal of SMPD4 is to provide analysis ready data sets on SMPD4 data.  
